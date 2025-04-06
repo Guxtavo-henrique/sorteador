@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sorteador de Times</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; background: #f4f4f4; }
+    h1 { text-align: center; }
+    textarea, select, button { width: 100%; margin: 1rem 0; padding: 1rem; font-size: 1rem; }
+    .times-container { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+    .time { background: white; border-radius: 1rem; padding: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1); flex: 1; min-width: 200px; }
+    .time h2 { margin-top: 0; text-align: center; }
+    .restantes { margin-top: 2rem; background: #fffbe6; padding: 1rem; border: 1px dashed #aaa; border-radius: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Sorteador de Times</h1>
+  <label>Lista de jogadores (do melhor para o pior):</label>
+  <textarea id="jogadores" rows="10">Pedro\nGustavo\nPagode\nCleiton\nEzequiel\nFalcão\nDavid\nJean\nÍndio\nPelé\nArthur\nCelso\nLc\nArmando\nJunin\nCaio Rafael\nGustavin\nKayo\nHenrique\nJoão\nJacaré\nLucas Abreu\nKauan\nKaiox\nAndré\nLéo\nPão de queijo</textarea>
+
+  <label>Quantidade de times:</label>
+  <select id="quantidadeTimes">
+    <option value="2">2 Times</option>
+    <option value="3">3 Times</option>
+    <option value="4">4 Times</option>
+  </select>
+
+  <label>Método de sorteio:</label>
+  <select id="metodo">
+    <option value="balanceado">Balanceado (média de ranking)</option>
+    <option value="serpentina">Serpentina (zig-zag de força)</option>
+  </select>
+
+  <button onclick="sortearTimes()">Sortear Times</button>
+
+  <div class="times-container" id="resultado"></div>
+  <div class="restantes" id="restantes"></div>
+
+  <script>
+    function validarRestricoes(times) {
+      const includes = (nome, time) => time.some(j => j.toLowerCase().includes(nome.toLowerCase()));
+      if (times.length === 2) {
+        return !(includes("Léo", times[0]) && includes("André", times[0])) && !(includes("Léo", times[1]) && includes("André", times[1]));
+      }
+      if (times.length === 3) {
+        return times.every(time => {
+          return ["Léo", "André", "Kauan"].filter(n => includes(n, time)).length <= 1;
+        });
+      }
+      if (times.length === 4) {
+        return times.every(time => {
+          return ["Léo", "André", "Kauan", "Kaiox"].filter(n => includes(n, time)).length <= 1;
+        });
+      }
+      return true;
+    }
+
+    function sortearTimes() {
+      const lista = document.getElementById("jogadores").value.trim().split(/\n|\r/).map(s => s.trim()).filter(s => s);
+      const nTimes = parseInt(document.getElementById("quantidadeTimes").value);
+      const metodo = document.getElementById("metodo").value;
+      let jogadores = lista.map((nome, i) => ({ nome, ranking: i + 1 }));
+      let times = Array.from({ length: nTimes }, () => []);
+      let restantes = [];
+
+      if (metodo === 'serpentina') {
+        const jogaveis = jogadores.slice(0, nTimes * 5);
+        const sobra = jogadores.slice(nTimes * 5);
+        let index = 0;
+        let direcao = 1;
+        for (let i = 0; i < jogaveis.length; i++) {
+          times[index].push(jogaveis[i].nome);
+          index += direcao;
+          if (index === nTimes || index === -1) {
+            direcao *= -1;
+            index += direcao;
+          }
+        }
+        restantes = sobra.map(j => j.nome);
+      } else {
+        // Balanceado com tentativa de equilíbrio
+        let tentativas = 0;
+        let sucesso = false;
+        while (tentativas++ < 2000 && !sucesso) {
+          times = Array.from({ length: nTimes }, () => []);
+          const jogaveis = [...jogadores].sort(() => Math.random() - 0.5).slice(0, nTimes * 5);
+          const sobra = jogadores.slice(nTimes * 5);
+          jogaveis.forEach((j, i) => times[i % nTimes].push(j));
+
+          const medias = times.map(time => time.reduce((acc, j) => acc + j.ranking, 0) / time.length);
+          const diff = Math.max(...medias) - Math.min(...medias);
+          sucesso = diff <= 2.5 && validarRestricoes(times.map(t => t.map(j => j.nome)));
+          if (sucesso) restantes = sobra.map(j => j.nome);
+        }
+        if (!sucesso) alert("Não foi possível balancear perfeitamente com as restrições.");
+        times = times.map(time => time.map(j => j.nome));
+      }
+
+      // Mostrar na tela
+      const container = document.getElementById("resultado");
+      container.innerHTML = "";
+      times.forEach((time, i) => {
+        const div = document.createElement("div");
+        div.className = "time";
+        div.innerHTML = `<h2>Time ${i + 1}</h2><ul>${time.map(j => `<li>${j}</li>`).join('')}</ul>`;
+        container.appendChild(div);
+      });
+      document.getElementById("restantes").innerHTML = restantes.length
+        ? `<strong>Próximos:</strong> ${restantes.join(", ")}`
+        : "";
+    }
+  </script>
+</body>
+</html>

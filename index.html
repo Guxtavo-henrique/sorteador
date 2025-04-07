@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sorteio de Times</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .ranking {
+        align-items: flex-start;
+        text-align: left;
+      }
+    }
+
+    .ranking,
+    .input-area,
+    .output-area {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      flex: 1;
+    }
+
+    .ranking {
+      max-width: 200px;
+      text-align: center;
+      margin: 0 auto;
+    }
+
+    .ranking h3,
+    .input-area h3,
+    .output-area h3 {
+      margin-top: 0;
+    }
+
+    .ranking-list {
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: vertical;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    select, button {
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    select {
+      background-color: #f0f0f0;
+      color: #333;
+      border: 1px solid #ccc;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .teams {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .team {
+      flex: 1;
+      min-width: 150px;
+      background: #e9f5e9;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .next {
+      margin-top: 12px;
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 Sorteio de Times Equilibrado</h1>
+  <div class="container">
+    <div class="ranking">
+      <h3>Ranking</h3>
+      <div class="ranking-list" id="rankingList">
+Pedro
+Gustavo
+Pagode
+Cleiton
+Ezequiel
+Falcão
+David
+Jean
+Índio
+Pelé
+Paiva
+Arthur
+Celso
+Lc
+Armando
+Junin
+Caio Rafael
+Gustavin
+Kayo
+Henrique
+João
+Jacaré
+Lucas Abreu
+Kauan
+Kaiox
+André
+Léo
+Pão de queijo
+      </div>
+    </div>
+
+    <div class="input-area">
+      <h3>Jogadores que vão jogar hoje</h3>
+      <textarea id="playerInput" placeholder=""></textarea>
+      <div class="controls">
+        <button onclick="organizar()">ORGANIZAR</button>
+      </div>
+    </div>
+
+    <div class="output-area">
+      <h3>Jogadores organizados</h3>
+      <textarea id="organizedOutput" readonly></textarea>
+      <div class="controls">
+        <select id="numTeams">
+          <option value="2">2 times</option>
+          <option value="3">3 times</option>
+          <option value="4">4 times</option>
+        </select>
+        <select id="metodo">
+          <option value="serpentina">Serpentina</option>
+          <option value="balanceado">Balanceado</option>
+        </select>
+        <button onclick="sortear()">SORTEAR</button>
+      </div>
+      <div id="resultados"></div>
+      <div class="error" id="erro"></div>
+    </div>
+  </div>
+
+  <script>
+    const ranking = [
+      "Pedro", "Gustavo", "Pagode", "Cleiton", "Ezequiel", "Falcão", "David", "Jean", "Índio", "Pelé", "Paiva", "Arthur",
+      "Celso", "Lc", "Armando", "Junin", "Caio Rafael", "Gustavin", "Kayo", "Henrique", "João", "Jacaré", "Lucas Abreu",
+      "Kauan", "Kaiox", "André", "Léo", "Pão de queijo"
+    ];
+
+    function organizar() {
+      const input = document.getElementById("playerInput").value.trim().split("\n").map(s => s.trim()).filter(Boolean);
+      const ordered = ranking.filter(name => input.includes(name));
+      document.getElementById("organizedOutput").value = ordered.join("\n");
+    }
+
+    function sortear() {
+      const metodo = document.getElementById("metodo").value;
+      const n = parseInt(document.getElementById("numTeams").value);
+      const jogadores = document.getElementById("organizedOutput").value.trim().split("\n").filter(Boolean);
+
+      // restrições
+      if (
+        (n === 2 && jogadores.includes("Léo") && jogadores.includes("André")) ||
+        (n === 3 && jogadores.includes("Léo") && jogadores.includes("André") && jogadores.includes("Kauan")) ||
+        (n === 4 && jogadores.includes("Léo") && jogadores.includes("André") && jogadores.includes("Kauan") && jogadores.includes("Kaiox"))
+      ) {
+        document.getElementById("erro").textContent = "⚠️ Restrições não permitem esse agrupamento!";
+        document.getElementById("resultados").innerHTML = "";
+        return;
+      }
+
+      document.getElementById("erro").textContent = "";
+
+      let fila = [...jogadores];
+      const teams = Array.from({ length: n }, () => []);
+
+      if (metodo === "serpentina") {
+        let i = 0, dir = 1;
+        while (fila.length > 0) {
+          if (teams[i].length < 5) {
+            teams[i].push(fila.shift());
+          }
+          i += dir;
+          if (i === n || i < 0) {
+            dir *= -1;
+            i += dir;
+          }
+        }
+      }
+
+      if (metodo === "balanceado") {
+        let index = 0;
+        while (fila.length > 0) {
+          const jogador = fila.shift();
+          let menorTime = teams.reduce((min, t, i) => t.length < teams[min].length ? i : min, 0);
+          teams[menorTime].push(jogador);
+          index++;
+        }
+      }
+
+      let html = `<div class="teams">`;
+      teams.forEach((team, i) => {
+        html += `<div class="team"><strong>Time ${i + 1}</strong><ul>`;
+        team.forEach(jogador => {
+          html += `<li>${jogador}</li>`;
+        });
+        html += `</ul></div>`;
+      });
+      html += `</div>`;
+
+      const restantes = jogadores.slice(n * 5);
+      if (restantes.length > 0) {
+        html += `<div class="next"><strong>Próximos:</strong> ${restantes.join(", ")}</div>`;
+      }
+
+      document.getElementById("resultados").innerHTML = html;
+    }
+  </script>
+</body>
+</html>

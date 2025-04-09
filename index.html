@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sorteio de Times</title>
+  <style>
+    :root {
+      --bg-light: #fdfdfd;
+      --text-light: #000;
+      --card-light: #fff;
+      --bg-dark: #1c1c2e;
+      --text-dark: #fff;
+      --card-dark: #2a2a40;
+      --accent: #a060f7;
+      --gold: #ffd700;
+      --silver: #c0c0c0;
+      --bronze: #cd7f32;
+      --rank-gray: #aaa;
+    }
+
+    [data-theme="light"] {
+      --bg-color: var(--bg-light);
+      --text-color: var(--text-light);
+      --card-color: var(--card-light);
+    }
+
+    [data-theme="dark"] {
+      --bg-color: var(--bg-dark);
+      --text-color: var(--text-dark);
+      --card-color: var(--card-dark);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    h3 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    textarea, .ranking {
+      width: 250px;
+      height: 300px;
+      padding: 10px;
+      font-size: 14px;
+      background-color: var(--card-color);
+      color: var(--text-color);
+      border: 1px solid #444;
+      border-radius: 8px;
+      resize: none;
+      overflow-y: auto;
+    }
+
+    .ranking ol {
+      list-style: none;
+      padding: 0;
+    }
+
+    .ranking li {
+      margin: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ranking span.rank {
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .ranking li:nth-child(1) span.rank { color: var(--gold); }
+    .ranking li:nth-child(2) span.rank { color: var(--silver); }
+    .ranking li:nth-child(3) span.rank { color: var(--bronze); }
+    .ranking li:nth-child(n+4):nth-child(-n+10) span.rank { color: var(--accent); }
+    .ranking li:nth-child(n+11) span.rank { color: var(--rank-gray); }
+
+    .controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    select, button {
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 14px;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .teams {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .team {
+      background-color: var(--card-color);
+      padding: 10px;
+      width: 200px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(160, 96, 247, 0.2);
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--accent);
+      color: white;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .ranking, textarea {
+        width: 100%;
+      }
+
+      .team {
+        width: 100%;
+      }
+
+      .ranking ol {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <button class="dark-toggle" onclick="toggleTheme()">🌗 Mudar Tema</button>
+
+  <div class="container">
+    <div class="ranking">
+      <h3>Ranking</h3>
+      <ol id="ranking-list"></ol>
+    </div>
+
+    <textarea id="input-nomes" placeholder="Cole os nomes aqui..."></textarea>
+    <textarea id="jogadores-organizados" readonly placeholder="Organizados..."></textarea>
+  </div>
+
+  <div class="controls">
+    <button onclick="organizar()">ORGANIZAR</button>
+    <select id="modo-sorteio">
+      <option value="balanceado">Balanceado</option>
+      <option value="serpentina">Serpentina</option>
+    </select>
+    <select id="qtde-times">
+      <option value="2">2 Times</option>
+      <option value="3">3 Times</option>
+      <option value="4">4 Times</option>
+    </select>
+    <button onclick="sortear()">SORTEAR</button>
+    <button onclick="resetar()">RESETAR</button>
+  </div>
+
+  <div class="teams" id="resultado"></div>
+
+  <script>
+    const ranking = [
+      "Pedro", "Gustavo", "Pagode", "Cleiton", "Ezequiel", "Falcão", "David", "Jean", "Índio",
+      "Pelé", "Paiva", "Arthur", "Celso", "Lc", "Armando", "Junin", "Caio Rafael", "Gustavin",
+      "Kayo", "Henrique", "João", "Jacaré", "Lucas Abreu", "Kauan", "Kaiox", "André", "Léo", "Pão de queijo"
+    ];
+
+    const restricoes = {
+      2: [["Léo", "André"]],
+      3: [["Léo", "André", "Kauan"]],
+      4: [["Léo", "André", "Kauan", "Kaiox"]]
+    };
+
+    function renderRanking() {
+      const container = document.getElementById('ranking-list');
+      container.innerHTML = ranking.map((nome, i) => {
+        let medalha = '';
+        if (i === 0) medalha = '🥇';
+        else if (i === 1) medalha = '🥈';
+        else if (i === 2) medalha = '🥉';
+        else medalha = (i + 1).toString();
+        return `<li><span class="rank">${medalha}</span> ${nome}</li>`;
+      }).join('');
+    }
+
+    function toggleTheme() {
+      const current = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+
+    function organizar() {
+      const input = document.getElementById('input-nomes').value.trim().split('\n').map(n => n.trim()).filter(Boolean);
+      const organizados = ranking.filter(n => input.includes(n));
+      document.getElementById('jogadores-organizados').value = organizados.join('\n');
+    }
+
+    function resetar() {
+      document.getElementById('resultado').innerHTML = '';
+    }
+
+    function sortear() {
+  const modo = document.getElementById("modo-sorteio").value;
+  const times = parseInt(document.getElementById("qtde-times").value);
+  const jogadores = document.getElementById("jogadores-organizados").value.trim().split('\n').map(j => j.trim()).filter(Boolean);
+
+  const totalNecessario = times * 5;
+
+  if (jogadores.length < totalNecessario) {
+    alert(`Jogadores insuficientes! São necessários pelo menos ${totalNecessario} jogadores para ${times} times.`);
+    return;
+  }
+
+  let sorteados = [...jogadores];
+  if (modo === "balanceado") {
+    sorteados.sort((a, b) => ranking.indexOf(a) - ranking.indexOf(b));
+  } else {
+    sorteados = sorteados.sort(() => Math.random() - 0.5);
+  }
+
+  // Garante múltiplas variações evitando padrão repetitivo
+  for (let i = sorteados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sorteados[i], sorteados[j]] = [sorteados[j], sorteados[i]];
+  }
+
+  const grupos = Array(times).fill().map(() => []);
+  const limite = 5;
+  let extras = [];
+
+  // Distribuição em serpentina ou normal
+  if (modo === "serpentina") {
+    let index = 0, dir = 1;
+    for (const jogador of sorteados) {
+      if (grupos[index].length < limite) {
+        grupos[index].push(jogador);
+      } else {
+        extras.push(jogador);
+      }
+      index += dir;
+      if (index === times) { dir = -1; index = times - 1; }
+      else if (index === -1) { dir = 1; index = 0; }
+    }
+  } else {
+    let i = 0;
+    for (const jogador of sorteados) {
+      let count = 0;
+      while (grupos[i % times].length >= limite && count < times) {
+        i++;
+        count++;
+      }
+      if (grupos[i % times].length < limite) {
+        grupos[i % times].push(jogador);
+      } else {
+        extras.push(jogador);
+      }
+      i++;
+    }
+  }
+
+  const resultadoHTML = grupos.map((g, i) => `
+    <div class="team">
+      <strong>Time ${i + 1}</strong>
+      <ul>${g.map(j => `<li>${j}</li>`).join("")}</ul>
+    </div>
+  `).join("");
+
+  const proximosHTML = extras.length ? `
+    <div class="team">
+      <strong>Próximos</strong>
+      <ul>${extras.map(j => `<li>${j}</li>`).join("")}</ul>
+    </div>
+  ` : '';
+
+  document.getElementById("resultado").innerHTML = resultadoHTML + proximosHTML;
+}
+
+
+    renderRanking();
+  </script>
+</body>
+</html>
